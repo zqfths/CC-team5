@@ -3,6 +3,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import Stats from "three/examples/jsm/libs/stats.module";
 import * as dat from "dat.gui";
+import * as CANON from "cannon";
 
 /* 
 BASE
@@ -73,8 +74,8 @@ camera.lookAt(0, 0, 0);
 scene.add(camera);
 
 // Controls
-const controls = new OrbitControls(camera, canvas);
-controls.enableDamping = true;
+// const controls = new OrbitControls(camera, canvas);
+// controls.enableDamping = true;
 
 /*
 -------------------------------------------------------- 
@@ -84,6 +85,16 @@ controls.enableDamping = true;
 const axesHelper = new THREE.AxesHelper();
 scene.add(axesHelper);
 
+//mousePosition
+let xPos = 0;
+let yPos = 0;
+window.addEventListener("click", getClickPosition, true);
+function getClickPosition(e) {
+  xPos = e.clientX;
+  yPos = e.clientY;
+  console.log(xPos, yPos);
+}
+
 // Objects
 const geometry = new THREE.BoxGeometry(4, 1.2, 1);
 const color = new THREE.Color(`hsl(50, 100%, 90%)`);
@@ -92,11 +103,15 @@ const material = new THREE.MeshLambertMaterial({ color });
 const box = new THREE.Mesh(geometry, material);
 scene.add(box);
 
+/*
+-------------------------------------------------------- 
+ */
+
 /**
  * Animate
  */
 const clock = new THREE.Clock();
-const tick = () => {
+const animation = () => {
   stats.begin();
 
   // Update objects
@@ -104,13 +119,13 @@ const tick = () => {
   //   box.rotation.y = 0.5 * elapsedTime;
 
   // Update Orbital Controls
-  controls.update();
+  //   controls.update();
 
   // Render
   renderer.render(scene, camera);
   stats.end();
 
-  // Call tick again on the next frame
-  window.requestAnimationFrame(tick);
+  // Call animation again on the next frame
+  window.requestAnimationFrame(animation);
 };
-tick();
+animation();
