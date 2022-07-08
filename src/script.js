@@ -16,7 +16,6 @@ let camera, scene, renderer;
 let lastTime;
 let remainedPart;
 let sliced;
-let numCut = 1;
 let physicsWorld, cannonDebugger;
 
 //Initial Dimension
@@ -24,6 +23,7 @@ const initLength = 4;
 const initHeight = 1;
 const initDepth = 2;
 
+const gui = new dat.GUI();
 const stats = new Stats();
 stats.showPanel(0);
 document.body.appendChild(stats.dom);
@@ -47,7 +47,6 @@ function init() {
   });
 
   // Initialize ThreeJS
-  const gui = new dat.GUI();
   const canvas = document.getElementById("canvasThreeJS");
 
   scene = new THREE.Scene();
@@ -76,7 +75,15 @@ function init() {
   scene.add(camera);
 
   //get initial object!
-  addRemainedObject({ x: 0, length: initLength });
+  addRemainedBox({ x: 0, length: initLength });
+
+  //add gui
+  gui
+    .add(remainedPart.threejs.position, "x", -initLength / 2, initLength / 2)
+    .name("Box Position")
+    .onFinishChange((value) => {
+      remainedPart.threejs.position.x = value;
+    });
 
   // Lights
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
@@ -115,14 +122,7 @@ function init() {
 -------------------------------------------------------- 
  */
 
-//mousePosition
-window.addEventListener("click", getClickPosition, true);
-function getClickPosition(e) {
-  const xPos = e.clientX;
-  const yPos = e.clientY;
-  console.log("Mouse position:: x:" + xPos, "y:" + yPos);
-}
-
+// Slicing Box
 window.addEventListener("keydown", (event) => {
   if (event.key == " ") {
     eventHandler();
@@ -131,19 +131,33 @@ window.addEventListener("keydown", (event) => {
 });
 
 function eventHandler() {
-  sliceBox();
-  return;
+  console.log("slice!! yumm..");
+  cutBox();
 }
 
 /*
 -------------------------------------------------------- 
  */
 
-function cutBox() {}
+function cutBox() {
+  const prevXPos = remainedPart.xPos;
+  const prevLength = remainedPart.length;
 
-function getSlicePos({ slice }) {}
+  const slicePos = prevLength / 2 - 1;
+  //   addRemainedBox({ x, length });
+  //   addOverHang({ x, length });
+}
 
-function addRemainedObject({ x, length }) {
+function getSlicesPos({ slice }) {
+  return {
+    xRemained,
+    lengthRemained,
+    xOverHang,
+    lengthOverhang,
+  };
+}
+
+function addRemainedBox({ x, length }) {
   x = x || 0;
   length = length || 4;
   const layer = generateBox({ x, length, falls: false });
