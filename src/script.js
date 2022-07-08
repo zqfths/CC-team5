@@ -140,26 +140,20 @@ function eventHandler() {
  */
 
 function cutBox() {
-  const prevXPos = remainedPart.xPos;
+  const xPosition = remainedPart.xPos;
   const prevLength = remainedPart.length;
 
-  const slicePos = prevLength / 2 - 1;
-  //   addRemainedBox({ x, length });
-  //   addOverHang({ x, length });
-}
+  const overhangLength = prevLength / 2 + xPosition;
+  const overhangXPos = overhangLength / 2;
+  const keepLength = prevLength - overhangLength;
+  const keepXPos = -keepLength / 2;
 
-function getSlicesPos({ slice }) {
-  return {
-    xRemained,
-    lengthRemained,
-    xOverHang,
-    lengthOverhang,
-  };
+  //update Box
+  addRemainedBox({ x: keepXPos, length: keepLength });
+  addOverHang({ x: overhangXPos, length: overhangLength });
 }
 
 function addRemainedBox({ x, length }) {
-  x = x || 0;
-  length = length || 4;
   const layer = generateBox({ x, length, falls: false });
   remainedPart = layer;
 }
@@ -196,14 +190,18 @@ function generateBox({ x, length, falls }) {
   };
 }
 
-function sliceBox() {
-  console.log("slice! yumm..");
+function updatePhysicsWorld() {
+  physicsWorld.fixedStep();
+  sliced[0].threejs.position.copy(sliced[0].cannonjs.position);
+  sliced[0].threejs.quaternion.copy(sliced[0].cannonjs.quaternion);
 }
 
 function animation(time) {
   if (lastTime) {
-    const timePassed = time - lastTime;
+    // const timePassed = time - lastTime;
     stats.begin();
+
+    if (sliced.length > 0) updatePhysicsWorld();
     // physicsWorld.fixedStep();
     // cannonDebugger.update();
 
