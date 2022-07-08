@@ -201,7 +201,9 @@ function animation(time) {
     // const timePassed = time - lastTime;
     stats.begin();
 
-    if (sliced.length > 0) updatePhysicsWorld();
+    if (sliced.length > 0) {
+      updatePhysicsWorld();
+    }
     // physicsWorld.fixedStep();
     // cannonDebugger.update();
 
