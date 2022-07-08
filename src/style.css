@@ -10,6 +10,14 @@ html,
     position: absolute;
     top: 0;
     left: 0;
+    width: 100px;
+    height: 100px;
+    z-index: 100;
+}
+
+.p5Canvas{
+    /* background-color: aqua; */
+    z-index: 50000;
   }
 
 body
@@ -18,10 +26,10 @@ body
     font-family: 'Poppins';
 }
 
-.webgl
+/* .webgl
 {
     position: fixed;
     top: 0;
     left: 0;
     outline: none;
-}
+} */

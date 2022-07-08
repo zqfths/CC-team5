@@ -3,17 +3,26 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import Stats from "three/examples/jsm/libs/stats.module";
 import * as dat from "dat.gui";
-import * as CANNON from "cannon";
+import * as CANNON from "cannon-es";
+import CannonDebugger from "cannon-es-debugger";
+import Canvas from "./sketch.js";
+
+/*
+-------------------------------------------------------- 
+ */
 
 let camera, scene, renderer;
-let world; // CannonJs world
-let lastTime; // Last timestamp of animation
-let tofu; // Parts that remains
-let sliced; // sliced parts that fall down
-let autopilot;
-let gameEnded;
-const tofuHeight = 1;
-const tofuDepth = 2;
+
+let lastTime;
+let remainedPart;
+let sliced;
+let numCut = 1;
+let physicsWorld, cannonDebugger;
+
+//Initial Dimension
+const initLength = 4;
+const initHeight = 1;
+const initDepth = 2;
 
 const stats = new Stats();
 stats.showPanel(0);
@@ -21,21 +30,25 @@ document.body.appendChild(stats.dom);
 
 init();
 
-function init() {
-  lastTime = 0;
-  tofu = [];
-  sliced = [];
-  gameEnded = false;
+/*
+-------------------------------------------------------- 
+ */
 
-  // Initialize CannonJS
-  world = new CANNON.World();
-  world.gravity.set(0, -10, 0); // Gravity pulls things down
-  world.broadphase = new CANNON.NaiveBroadphase();
-  world.solver.iterations = 40;
+function init() {
+  const canvasP5 = new Canvas();
+
+  lastTime = 0;
+  sliced = [];
+
+  //Initialize CannonJS
+  physicsWorld = new CANNON.World({
+    gravity: new CANNON.Vec3(0, -9.82, 0),
+    broadphase: new CANNON.NaiveBroadphase(),
+  });
 
   // Initialize ThreeJS
   const gui = new dat.GUI();
-  const canvas = document.querySelector("canvas.webgl");
+  const canvas = document.getElementById("canvasThreeJS");
 
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0x222222);
@@ -62,8 +75,8 @@ function init() {
   camera.lookAt(0, 0, 0);
   scene.add(camera);
 
-  //get initial tofu!
-  generateTofu(0, 4);
+  //get initial object!
+  addRemainedObject({ x: 0, length: initLength });
 
   // Lights
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
@@ -77,11 +90,22 @@ function init() {
   const axesHelper = new THREE.AxesHelper();
   scene.add(axesHelper);
 
+  window.addEventListener("resize", () => {
+    // Update camera
+    camera.aspect = aspect;
+    camera.updateProjectionMatrix();
+
+    // Update renderer
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.render(scene, camera);
+  });
+
   // Renderer
   renderer = new THREE.WebGLRenderer({
-    canvas: canvas,
     antialias: true,
   });
+  canvas.appendChild(renderer.domElement);
   renderer.setSize(sizes.width, sizes.height);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setAnimationLoop(animation);
@@ -91,43 +115,86 @@ function init() {
 -------------------------------------------------------- 
  */
 
-function generateTofu(x, width) {
-  //ThreeJS
-  const geometry = new THREE.BoxGeometry(width, tofuHeight, tofuDepth);
-  const color = new THREE.Color(`hsl(50, 100%, 90%)`);
+//mousePosition
+window.addEventListener("click", getClickPosition, true);
+function getClickPosition(e) {
+  const xPos = e.clientX;
+  const yPos = e.clientY;
+  console.log("Mouse position:: x:" + xPos, "y:" + yPos);
+}
+
+window.addEventListener("keydown", (event) => {
+  if (event.key == " ") {
+    eventHandler();
+    return;
+  }
+});
+
+function eventHandler() {
+  sliceBox();
+  return;
+}
+
+/*
+-------------------------------------------------------- 
+ */
+
+function cutBox() {}
+
+function getSlicePos({ slice }) {}
+
+function addRemainedObject({ x, length }) {
+  x = x || 0;
+  length = length || 4;
+  const layer = generateBox({ x, length, falls: false });
+  remainedPart = layer;
+}
+
+function addOverHang({ x, length }) {
+  const layer = generateBox({ x, length, falls: true });
+  sliced.unshift(layer);
+}
+
+function generateBox({ x, length, falls }) {
+  //ThreeJs
+  const geometry = new THREE.BoxGeometry(length, initHeight, initDepth);
+  const color = new THREE.Color(`hsl(${150}, 100%, 90%)`);
   const material = new THREE.MeshLambertMaterial({ color });
   const mesh = new THREE.Mesh(geometry, material);
   mesh.position.set(x, 0, 0);
   scene.add(mesh);
+
+  //CannonJS
+  const shape = new CANNON.Box(
+    new CANNON.Vec3(length / 2, initHeight / 2, initDepth / 2)
+  );
+  let mass = falls ? 5 : 0; // If it shouldn't fall then setting the mass to zero will keep it stationary
+  mass *= length / initLength; // Reduce mass proportionately by size
+  const body = new CANNON.Body({ mass, shape });
+  body.position.set(x, 0, 0);
+  physicsWorld.addBody(body);
+
+  return {
+    threejs: mesh,
+    cannonjs: body,
+    xPos: x,
+    length,
+  };
 }
 
-function animation() {
-  stats.begin();
-
-  renderer.render(scene, camera);
-  stats.end();
-
-  //   // Call animation again on the next frame
-  //   window.requestAnimationFrame(animation);
+function sliceBox() {
+  console.log("slice! yumm..");
 }
 
-//mousePosition
-let xPos = 0;
-let yPos = 0;
-window.addEventListener("click", getClickPosition, true);
-function getClickPosition(e) {
-  xPos = e.clientX;
-  yPos = e.clientY;
-  console.log(xPos, yPos);
+function animation(time) {
+  if (lastTime) {
+    const timePassed = time - lastTime;
+    stats.begin();
+    // physicsWorld.fixedStep();
+    // cannonDebugger.update();
+
+    renderer.render(scene, camera);
+    stats.end();
+  }
+  lastTime = time;
 }
-
-window.addEventListener("resize", () => {
-  // Update camera
-  camera.aspect = aspect;
-  camera.updateProjectionMatrix();
-
-  // Update renderer
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.render(scene, camera);
-});
